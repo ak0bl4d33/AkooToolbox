@@ -13,168 +13,30 @@ import json
 import os
 
 context = bpy.context
-#region def Save/Load Presets and Config
-# R-Start - Save/Load Presets ( PRESETS )
-def get_presets_path():
-    return os.path.join(bpy.utils.user_resource('CONFIG'), "AkooToolbox_presets.json")
-
-def load_presets():
-    try:
-        with open(get_presets_path(), 'r') as f:
-            return json.load(f)
-    except:
-        return {}
-
-def save_presets(presets):
-    try:
-        with open(get_presets_path(), 'w') as f:
-            json.dump(presets, f, indent=4)
-    except Exception as e:
-        print(f"[AkooToolbox] Fehler beim Speichern der Presets: {e}")
-# R-End - Save/Load Presets
-# R-Start - Save Settings across sessions ( CONFIG )
-def get_config_path():
-    return os.path.join(bpy.utils.user_resource('CONFIG'), "AkooToolbox_config.json")
-
-def save_user_data(data: dict):
-    try:
-        with open(get_config_path(), 'w') as f:
-            json.dump(data, f)
-    except Exception as e:
-        print(f"[AkooToolbox] Fehler beim Speichern: {e}")
-
-def load_user_data() -> dict:
-    try:
-        with open(get_config_path(), 'r') as f:
-            return json.load(f)
-    except:
-        return {}
-# R-End - Save Settings across sessions
-#endregion
 
 #region def get_mesh_objects
-# This is for the SOURCE MESH DropDown! (Collects all Objects which are MESH)
+# This is for the SOURCE MESH DropDown! (Collects all Objects which are a MESH)
 def get_mesh_objects(self, context):
     return [(obj.name, obj.name, "") for obj in context.scene.objects if obj.type == 'MESH']
 #endregion
-
-#region class save/load/del akopresets
-# R-Start - SAVE
-class OBJECT_OT_save_akoopreset(bpy.types.Operator):
-    bl_idname = "object.save_akoopreset"
-    bl_label = "Save Preset"
-
-    def execute(self, context):
-        name = context.scene.akoopreset_newname.strip()
-        if not name:
-            self.report({'ERROR'}, "Please enter a preset name.")
-            return {'CANCELLED'}
-        presets = load_presets()
-        presets[name] = {
-            "surface_deform_include_exclude_textfield": context.scene.surface_deform_include_exclude_textfield,
-            "surface_deform_falloff": context.scene.surface_deform_falloff,
-            "surface_deform_strength": context.scene.surface_deform_strength,
-            "vertex_groups_include_exclude_textfield": context.scene.vertex_groups_include_exclude_textfield,
-            "vertex_mix_mode": context.scene.vertex_mix_mode,
-            "vertex_mix_set": context.scene.vertex_mix_set,
-            "vertex_mix_normalize": context.scene.vertex_mix_normalize,
-            "vertex_mix_default_a": context.scene.vertex_mix_default_a,
-            "vertex_mix_default_b": context.scene.vertex_mix_default_b,
-            "vertex_mapping_method": context.scene.vertex_mapping_method,
-            "weightpaint_smoothing_amount": context.scene.weightpaint_smoothing_amount,
-            "viewportdisplay_settings": context.scene.viewportdisplay_settings
-        }
-        save_presets(presets)
-        self.report({'INFO'}, f"Preset '{name}' saved.")
-        return {'FINISHED'}
-# R-End - SAVE
-# R-Start - LOAD
-class OBJECT_OT_load_akoopreset(bpy.types.Operator):
-    bl_idname = "object.load_akoopreset"
-    bl_label = "Load Preset"
-
-    def execute(self, context):
-        name = context.scene.akoopreset_list
-        presets = load_presets()
-        preset = presets.get(name)
-        if not preset:
-            self.report({'ERROR'}, f"Preset '{name}' not found.")
-            return {'CANCELLED'}
-        context.scene.surface_deform_include_exclude_textfield = preset.get("surface_deform_include_exclude_textfield", "")
-        context.scene.surface_deform_falloff = preset.get("surface_deform_falloff", 4.0)
-        context.scene.surface_deform_strength = preset.get("surface_deform_strength", 1.0)
-        context.scene.vertex_groups_include_exclude_textfield = preset.get("vertex_groups_include_exclude_textfield", "")
-        context.scene.vertex_mix_mode = preset.get("vertex_mix_mode", "ADD")
-        context.scene.vertex_mix_set = preset.get("vertex_mix_set", "ALL")
-        context.scene.vertex_mix_normalize = preset.get("vertex_mix_normalize", False)
-        context.scene.vertex_mix_default_a = preset.get("vertex_mix_default_a", 0.0)
-        context.scene.vertex_mix_default_b = preset.get("vertex_mix_default_b", 0.0)
-        context.scene.vertex_mapping_method = preset.get("vertex_mapping_method", "POLYINTERP_NEAREST")
-        context.scene.weightpaint_smoothing_amount = preset.get("weightpaint_smoothing_amount", 2)
-        context.scene.viewportdisplay_settings = preset.get("viewportdisplay_settings", "")
-        self.report({'INFO'}, f"Preset '{name}' loaded.")
-        return {'FINISHED'}
-# R-End - LOAD
-# R-Start - DELETE
-class OBJECT_OT_delete_akoopreset(bpy.types.Operator):
-    bl_idname = "object.delete_akoopreset"
-    bl_label = "Delete Preset"
-    def execute(self, context):
-        name = context.scene.akoopreset_list
-        presets = load_presets()
-        if name in presets:
-            del presets[name]
-            save_presets(presets)
-            self.report({'INFO'}, f"Preset '{name}' deleted.")
-        else:
-            self.report({'WARNING'}, f"Preset '{name}' not found.")
-        return {'FINISHED'}
-# R-End - DELETE 
-#endregion
-
-#region class save settings
-class OBJECT_OT_save_settings(bpy.types.Operator):
-    bl_idname = "object.save_settings" 
-    bl_label = "Save Settings" 
-    bl_description = "Saves the settings for the next time you open Blender." 
-    bl_options = {'REGISTER', 'UNDO'} 
-
-    def execute(self, context): 
-        save_user_data({
-            "last_surface_deform_falloff_object": context.scene.surface_deform_falloff,
-            "last_surface_deform_strength_object": context.scene.surface_deform_strength,
-            "last_include_exclude_shapekeys_object": context.scene.surface_deform_include_exclude_textfield,
-            "last_include_exclude_vertex_groups_object": context.scene.vertex_groups_include_exclude_textfield,
-            "vertex_mix_mode": context.scene.vertex_mix_mode,
-            "vertex_mix_set": context.scene.vertex_mix_set,
-            "vertex_mix_normalize": context.scene.vertex_mix_normalize,
-            "vertex_mix_default_a": context.scene.vertex_mix_default_a,
-            "vertex_mix_default_b": context.scene.vertex_mix_default_b,
-            "last_mapping_vertex_groups_object": context.scene.vertex_mapping_method,
-            "last_viewportdisplay_settings_object": context.scene.viewportdisplay_settings,
-            "last_weightpaint_smoothing_amount_object": context.scene.weightpaint_smoothing_amount
-        }) 
-        self.report({'INFO'}, "Settings saved.") 
-        return {'FINISHED'}
-#endregion
     
-#region class Surface Deform
+#region class Surface Deform / Shape Keys
 class OBJECT_OT_surface_deform_with_shapes(bpy.types.Operator): 
     bl_idname = "object.surface_deform_with_shapes" 
     bl_label = "Deform" 
-    bl_description = "Transfers all Shapekeys from Source to Target." 
+    bl_description = "Transfers all Shape Keys from Source to active Target." 
     bl_options = {'REGISTER', 'UNDO'} 
 
     surface_deform_include_exclude_textfield: bpy.props.StringProperty(
         name="Include/Exclude",
-        description="Comma-separated list of ShapeKeys to include/exclude."
+        description="Comma-separated list of Shape Keys to include/exclude."
     ) # type: ignore
     surface_deform_include_exclude_selector: bpy.props.EnumProperty(
         name="Mode",
-        description="Select the mode for including/excluding ShapeKeys.",
+        description="Select the mode for including/excluding Shape Keys.",
         items=[
-            ('INCLUDE', "Include", "Include specified ShapeKeys"),
-            ('EXCLUDE', "Exclude", "Exclude specified ShapeKeys"),
+            ('INCLUDE', "Include", "Include specified Shape Keys"),
+            ('EXCLUDE', "Exclude", "Exclude specified Shape Keys"),
         ]
     ) # type: ignore
     interpolation_falloff: bpy.props.FloatProperty(
@@ -216,7 +78,7 @@ class OBJECT_OT_surface_deform_with_shapes(bpy.types.Operator):
         bpy.ops.object.modifier_move_to_index(modifier=mod.name, index=0)
         bpy.ops.object.surfacedeform_bind(modifier=mod.name)
         if not source.data.shape_keys: 
-            self.report({'WARNING'}, "Source has no ShapeKeys.")
+            self.report({'WARNING'}, "Source has no Shape Keys.")
         else: 
             def resetShapeKeyWeights(obj): 
                 if (None != obj.data.shape_keys):
@@ -256,21 +118,21 @@ class OBJECT_OT_surface_deform_with_shapes(bpy.types.Operator):
             resetShapeKeyWeights(source)
             bpy.ops.object.surfacedeform_bind(modifier=mod.name)
             bpy.ops.object.modifier_remove(modifier=mod.name)
-        self.report({'INFO'}, f"{len(source.data.shape_keys.key_blocks)} Transfer ShapeKeys successful.") 
+        self.report({'INFO'}, f"{len(source.data.shape_keys.key_blocks)} Transfer Shape Keys successful.") 
         return {'FINISHED'}     
 #endregion
-#region class Paste Locked ShapeKeys
+#region class Paste Locked Shape Keys
 class OBJECT_OT_shapekeys_paste_locked(bpy.types.Operator):
     bl_idname = "object.shapekeys_paste_locked"
     bl_label = "Paste Locked"
-    bl_description = "Collect all locked ShapeKeys on the active object and put them into the Include field (comma-separated)."
+    bl_description = "Collect all locked Shape Keys on the active object and put them into the Include field (comma-separated)."
     bl_options = {'REGISTER', 'UNDO'}
 
     from typing import ClassVar, Any
     replace: ClassVar[Any]
     replace = bpy.props.BoolProperty(
         name="Replace Existing",
-        description="Replace current Include text. If off, append found ShapeKeys.",
+        description="Replace current Include text. If off, append found Shape Keys.",
         default=True
     )
     include_basis: ClassVar[Any]
@@ -286,7 +148,7 @@ class OBJECT_OT_shapekeys_paste_locked(bpy.types.Operator):
             return {'CANCELLED'}
         locked = [sk.name for sk in obj.data.shape_keys.key_blocks if getattr(sk, "lock_shape", False)]
         if not locked:
-            self.report({'INFO'}, "No locked ShapeKeys found.")
+            self.report({'INFO'}, "No locked Shape Keys found.")
             return {'CANCELLED'}
         scene = context.scene
         existing = scene.surface_deform_include_exclude_textfield.strip()
@@ -296,15 +158,15 @@ class OBJECT_OT_shapekeys_paste_locked(bpy.types.Operator):
             current = [n.strip() for n in existing.split(",") if n.strip()]
             names = current + [n for n in locked if n not in current]
         scene.surface_deform_include_exclude_textfield = ", ".join(names)
-        self.report({'INFO'}, f"Excluded {len(locked)} locked ShapeKeys.")
+        self.report({'INFO'}, f"Excluded {len(locked)} locked Shape Keys.")
         return {'FINISHED'}
     
 #endregion
-#region class remove empty shapekeys
+#region class remove empty Shape Keys
 class OBJECT_OT_remove_empty_shapekeys(bpy.types.Operator): 
     bl_idname = "object.remove_empty_shapekeys" 
-    bl_label = "Remove empty ShapeKeys" 
-    bl_description = "removes ShapeKeys without any delta from Basis." 
+    bl_label = "Remove empty Shape Keys" 
+    bl_description = "removes Shape Keys without any delta from Basis." 
     bl_options = {'REGISTER', 'UNDO'} 
 
     def execute(self, context): 
@@ -313,7 +175,7 @@ class OBJECT_OT_remove_empty_shapekeys(bpy.types.Operator):
             self.report({'ERROR'}, "Active Object is no Mesh.") 
             return {'CANCELLED'}         
         if not obj.data.shape_keys: 
-            self.report({'WARNING'}, "No ShapeKeys existing.") 
+            self.report({'WARNING'}, "No Shape Keys existing.") 
             return {'CANCELLED'}         
         basis = obj.data.shape_keys.key_blocks.get("Basis") 
         keys = obj.data.shape_keys.key_blocks 
@@ -330,7 +192,7 @@ class OBJECT_OT_remove_empty_shapekeys(bpy.types.Operator):
                 bpy.context.view_layer.objects.active = obj 
                 bpy.ops.object.shape_key_remove() 
                 removed += 1        
-        self.report({'INFO'}, f"{removed} removed empty ShapeKeys.") 
+        self.report({'INFO'}, f"{removed} removed empty Shape Keys.") 
         return {'FINISHED'} 
 #endregion
 
@@ -633,6 +495,145 @@ class OBJECT_OT_FixViewportDisplay(bpy.types.Operator):
             self.report({'WARNING'}, "Keine Armature gefunden.")
             return {'CANCELLED'}
 #endregion
+
+#region def Save/Load Presets and Config
+# R-Start - Save/Load Presets ( PRESETS )
+def get_presets_path():
+    return os.path.join(bpy.utils.user_resource('CONFIG'), "AkooToolbox_presets.json")
+
+def load_presets():
+    try:
+        with open(get_presets_path(), 'r') as f:
+            return json.load(f)
+    except:
+        return {}
+
+def save_presets(presets):
+    try:
+        with open(get_presets_path(), 'w') as f:
+            json.dump(presets, f, indent=4)
+    except Exception as e:
+        print(f"[AkooToolbox] an issue occurred while saving Presets: {e}")
+# R-End - Save/Load Presets
+# R-Start - Save Settings across sessions ( CONFIG )
+def get_config_path():
+    return os.path.join(bpy.utils.user_resource('CONFIG'), "AkooToolbox_config.json")
+
+def save_user_data(data: dict):
+    try:
+        with open(get_config_path(), 'w') as f:
+            json.dump(data, f)
+    except Exception as e:
+        print(f"[AkooToolbox] an issue occurred while saving User Data: {e}")
+
+def load_user_data() -> dict:
+    try:
+        with open(get_config_path(), 'r') as f:
+            return json.load(f)
+    except:
+        return {}
+# R-End - Save Settings across sessions
+#endregion
+#region class save/load/del akopresets
+# R-Start - SAVE
+class OBJECT_OT_save_akoopreset(bpy.types.Operator):
+    bl_idname = "object.save_akoopreset"
+    bl_label = "Save Preset"
+
+    def execute(self, context):
+        name = context.scene.akoopreset_newname.strip()
+        if not name:
+            self.report({'ERROR'}, "Please enter a preset name.")
+            return {'CANCELLED'}
+        presets = load_presets()
+        presets[name] = {
+            "surface_deform_include_exclude_textfield": context.scene.surface_deform_include_exclude_textfield,
+            "surface_deform_falloff": context.scene.surface_deform_falloff,
+            "surface_deform_strength": context.scene.surface_deform_strength,
+            "vertex_groups_include_exclude_textfield": context.scene.vertex_groups_include_exclude_textfield,
+            "vertex_mix_mode": context.scene.vertex_mix_mode,
+            "vertex_mix_set": context.scene.vertex_mix_set,
+            "vertex_mix_normalize": context.scene.vertex_mix_normalize,
+            "vertex_mix_default_a": context.scene.vertex_mix_default_a,
+            "vertex_mix_default_b": context.scene.vertex_mix_default_b,
+            "vertex_mapping_method": context.scene.vertex_mapping_method,
+            "weightpaint_smoothing_amount": context.scene.weightpaint_smoothing_amount,
+            "viewportdisplay_settings": context.scene.viewportdisplay_settings
+        }
+        save_presets(presets)
+        self.report({'INFO'}, f"Preset '{name}' saved.")
+        return {'FINISHED'}
+# R-End - SAVE
+# R-Start - LOAD
+class OBJECT_OT_load_akoopreset(bpy.types.Operator):
+    bl_idname = "object.load_akoopreset"
+    bl_label = "Load Preset"
+
+    def execute(self, context):
+        name = context.scene.akoopreset_list
+        presets = load_presets()
+        preset = presets.get(name)
+        if not preset:
+            self.report({'ERROR'}, f"Preset '{name}' not found.")
+            return {'CANCELLED'}
+        context.scene.surface_deform_include_exclude_textfield = preset.get("surface_deform_include_exclude_textfield", "")
+        context.scene.surface_deform_falloff = preset.get("surface_deform_falloff", 4.0)
+        context.scene.surface_deform_strength = preset.get("surface_deform_strength", 1.0)
+        context.scene.vertex_groups_include_exclude_textfield = preset.get("vertex_groups_include_exclude_textfield", "")
+        context.scene.vertex_mix_mode = preset.get("vertex_mix_mode", "ADD")
+        context.scene.vertex_mix_set = preset.get("vertex_mix_set", "ALL")
+        context.scene.vertex_mix_normalize = preset.get("vertex_mix_normalize", False)
+        context.scene.vertex_mix_default_a = preset.get("vertex_mix_default_a", 0.0)
+        context.scene.vertex_mix_default_b = preset.get("vertex_mix_default_b", 0.0)
+        context.scene.vertex_mapping_method = preset.get("vertex_mapping_method", "POLYINTERP_NEAREST")
+        context.scene.weightpaint_smoothing_amount = preset.get("weightpaint_smoothing_amount", 2)
+        context.scene.viewportdisplay_settings = preset.get("viewportdisplay_settings", "")
+        self.report({'INFO'}, f"Preset '{name}' loaded.")
+        return {'FINISHED'}
+# R-End - LOAD
+# R-Start - DELETE
+class OBJECT_OT_delete_akoopreset(bpy.types.Operator):
+    bl_idname = "object.delete_akoopreset"
+    bl_label = "Delete Preset"
+    def execute(self, context):
+        name = context.scene.akoopreset_list
+        presets = load_presets()
+        if name in presets:
+            del presets[name]
+            save_presets(presets)
+            self.report({'INFO'}, f"Preset '{name}' deleted.")
+        else:
+            self.report({'WARNING'}, f"Preset '{name}' not found.")
+        return {'FINISHED'}
+# R-End - DELETE 
+#endregion
+
+#region class save settings
+class OBJECT_OT_save_settings(bpy.types.Operator):
+    bl_idname = "object.save_settings" 
+    bl_label = "Save Settings" 
+    bl_description = "Saves the settings for the next time you open Blender." 
+    bl_options = {'REGISTER', 'UNDO'} 
+
+    def execute(self, context): 
+        save_user_data({
+            "last_surface_deform_falloff_object": context.scene.surface_deform_falloff,
+            "last_surface_deform_strength_object": context.scene.surface_deform_strength,
+            "last_include_exclude_shapekeys_object": context.scene.surface_deform_include_exclude_textfield,
+            "last_include_exclude_vertex_groups_object": context.scene.vertex_groups_include_exclude_textfield,
+            "vertex_mix_mode": context.scene.vertex_mix_mode,
+            "vertex_mix_set": context.scene.vertex_mix_set,
+            "vertex_mix_normalize": context.scene.vertex_mix_normalize,
+            "vertex_mix_default_a": context.scene.vertex_mix_default_a,
+            "vertex_mix_default_b": context.scene.vertex_mix_default_b,
+            "last_mapping_vertex_groups_object": context.scene.vertex_mapping_method,
+            "last_viewportdisplay_settings_object": context.scene.viewportdisplay_settings,
+            "last_weightpaint_smoothing_amount_object": context.scene.weightpaint_smoothing_amount
+        }) 
+        self.report({'INFO'}, "Settings saved.") 
+        return {'FINISHED'}
+#endregion
+
 #region class surface deform PANEL (Draw)
 class OBJECT_PT_surface_deform_panel(bpy.types.Panel): 
     bl_label = "AkooToolbox" 
@@ -743,44 +744,25 @@ class OBJECT_PT_surface_deform_panel(bpy.types.Panel):
 
 #region def register
 def register(): 
-    # R-Start - Save Region
-    bpy.types.Scene.show_save_region = bpy.props.BoolProperty(
-        name="Show Save Region",
-        description="Expand to show save options",
-        default=True
-    )
-    saved_data = load_user_data()
-    bpy.types.Scene.akoopreset_list = bpy.props.EnumProperty(
-        name="Presets",
-        description="Select preset",
-        items=lambda self, context: [(k, k, "") for k in load_presets().keys()]
-    )
-    bpy.types.Scene.akoopreset_newname = bpy.props.StringProperty(
-        name="Preset Name",
-        description="Name of new preset to save"
-    )
-    bpy.utils.register_class(OBJECT_OT_save_akoopreset)
-    bpy.utils.register_class(OBJECT_OT_load_akoopreset)
-    bpy.utils.register_class(OBJECT_OT_delete_akoopreset)
-    # R-End - Save Region
-    # R-Start - Source Region
+    # R-Start - Source Mesh Region
     bpy.types.Scene.show_source_region = bpy.props.BoolProperty(
         name="Show Source Region",
         description="Expand to show deform options",
         default=True
     )
-    #saved_sourcemesh = saved_data.get("last_source_object")
     bpy.types.Scene.surface_deform_source = bpy.props.EnumProperty(
         name="Source Mesh",
-        description="Object with ShapeKeys",
+        description="Object with Shape Keys",
         items=get_mesh_objects,
         default=None
     )
     bpy.utils.register_class(OBJECT_OT_save_settings)
-    # R-End - Main Region
-    # R-Start - Shapekey Region
+    # R-End - Source Mesh Region
+
+
+    # R-Start - Shape Key Region
     bpy.types.Scene.show_shapekey_region = bpy.props.BoolProperty(
-        name="Show Shapekey Region",
+        name="Show Shape Key Region",
         description="Expand to show shapekey options",
         default=False
     )
@@ -788,8 +770,6 @@ def register():
     bpy.utils.register_class(OBJECT_OT_remove_empty_shapekeys) 
     bpy.utils.register_class(OBJECT_PT_surface_deform_panel) 
     saved_include_exclude_textfield_shapekey = saved_data.get("last_include_exclude_textfield_shapekeys_object")
-    #saved_include_shapekey = saved_data.get("last_include_shapekeys_object")
-    #saved_exclude_shapekey = saved_data.get("last_exclude_shapekeys_object")
     bpy.types.Scene.surface_deform_include_exclude_selector = bpy.props.EnumProperty(
         name="Include/Exclude Mode",
         description="Choose whether to use Include or Exclude list (Include has priority).",
@@ -800,19 +780,9 @@ def register():
     )
     bpy.types.Scene.surface_deform_include_exclude_textfield = bpy.props.StringProperty(
         name="Include/Exclude TextField",
-        description="Comma-separated list of ShapeKeys to include (leave blank to include all).",
+        description="Comma-separated list of Shape Keys to include (leave blank to include all).",
         default=saved_include_exclude_textfield_shapekey if saved_include_exclude_textfield_shapekey else "",
     ) 
-    #bpy.types.Scene.surface_deform_include = bpy.props.StringProperty(
-    #    name="Include ShapeKeys",
-    #    description="Comma-separated list of ShapeKeys to include (leave blank to include all).",
-    #    default=saved_include_shapekey if saved_include_shapekey else ""
-    #) 
-    #bpy.types.Scene.surface_deform_exclude = bpy.props.StringProperty(
-    #    name="Exclude ShapeKeys",
-    #    description="Comma-separated list of ShapeKeys to exclude.",
-    #    default=saved_exclude_shapekey if saved_exclude_shapekey else ""
-    #) 
     saved_falloff_shapekey = saved_data.get("last_surface_deform_falloff_object")
     saved_strength_shapekey = saved_data.get("last_surface_deform_strength_object")
     bpy.types.Scene.surface_deform_falloff = bpy.props.FloatProperty(
@@ -828,10 +798,12 @@ def register():
         max=1.0
     ) 
     bpy.utils.register_class(OBJECT_OT_reset_deform_settings) 
-    # R-Start - Paste Locked Shapekeys
+    # R-Start - Paste Locked Shape Keys
     bpy.utils.register_class(OBJECT_OT_shapekeys_paste_locked)
-    # R-End - Paste Locked Shapekeys
-    # R-End - Shapekey Region
+    # R-End - Paste Locked Shape Keys
+    # R-End - Shape Key Region
+
+
     # R-Start - VertexGroups Region
     bpy.types.Scene.show_vertexgroups_region = bpy.props.BoolProperty(
         name="VertexGroups Region",
@@ -850,19 +822,9 @@ def register():
     )
     bpy.types.Scene.vertex_groups_include_exclude_textfield = bpy.props.StringProperty(
         name="Include/Exclude TextField",
-        description="Comma-separated list of ShapeKeys to include (leave blank to include all).",
+        description="Comma-separated list of Shape Keys to include (leave blank to include all).",
         default=saved_include_exclude_textfield_vertexgroups if saved_include_exclude_textfield_vertexgroups else "",
     ) 
-    #bpy.types.Scene.vertex_groups_include = bpy.props.StringProperty(
-    #    name="Include VertexGroups",
-    #    description="Comma-separated list of VertexGroups to include (leave blank to include all).",
-    #    default=saved_include_vertex_groups if saved_include_vertex_groups else ""
-    #) 
-    #bpy.types.Scene.vertex_groups_exclude = bpy.props.StringProperty(
-    #    name="Exclude VertexGroups",
-    #    description="Comma-separated list of VertexGroups to exclude.",
-    #    default=saved_exclude_vertex_groups if saved_exclude_vertex_groups else ""
-    #) 
     # Load saved mapping for VertexGroups from AkooToolbox_config.json
     saved_mapping_vertex_groups = saved_data.get("last_mapping_vertex_groups_object")
     bpy.types.Scene.vertex_mapping_method = bpy.props.EnumProperty(
@@ -971,11 +933,15 @@ def register():
         default=True
     )
     # R-End - Vertex Group Mask
-#endregion
 
-#region def unregister
-def unregister(): 
-    
+
+    # R-Start - Save Region
+    bpy.types.Scene.show_save_region = bpy.props.BoolProperty(
+        name="Show Save Region",
+        description="Expand to show save options",
+        default=True
+    )
+    saved_data = load_user_data()
     bpy.types.Scene.akoopreset_list = bpy.props.EnumProperty(
         name="Presets",
         description="Select preset",
@@ -988,28 +954,31 @@ def unregister():
     bpy.utils.register_class(OBJECT_OT_save_akoopreset)
     bpy.utils.register_class(OBJECT_OT_load_akoopreset)
     bpy.utils.register_class(OBJECT_OT_delete_akoopreset)
-    # R-Start - Source Region
+    # R-End - Save Region
+#endregion
+
+#region def unregister
+def unregister(): 
+    # R-Start - Source Mesh Region
     del bpy.types.Scene.show_source_region
     del bpy.types.Scene.show_save_region
     del bpy.types.Scene.surface_deform_source 
     bpy.utils.unregister_class(OBJECT_OT_save_settings) 
-    # R-End - Source Region
-    # R-Start - Shapekey Region
+    # R-End - Source Mesh Region
+    # R-Start - Shape Keys Region
     del bpy.types.Scene.show_shapekey_region
     bpy.utils.unregister_class(OBJECT_OT_surface_deform_with_shapes) 
     bpy.utils.unregister_class(OBJECT_OT_remove_empty_shapekeys) 
     bpy.utils.unregister_class(OBJECT_PT_surface_deform_panel)  
     del bpy.types.Scene.surface_deform_include_exclude_selector
     del bpy.types.Scene.surface_deform_include_exclude_textfield
-    #del bpy.types.Scene.surface_deform_include 
-    #del bpy.types.Scene.surface_deform_exclude
     del bpy.types.Scene.surface_deform_falloff
     del bpy.types.Scene.surface_deform_strength
     bpy.utils.unregister_class(OBJECT_OT_reset_deform_settings) 
-    # R-Start - Paste locked Shapekeys
+    # R-Start - Paste locked Shape Keys
     bpy.utils.unregister_class(OBJECT_OT_shapekeys_paste_locked)
-    # R-End - Paste locked Shapekeys
-    # R-End - Shapekey Region
+    # R-End - Paste locked Shape Keys
+    # R-End - Shape Keys Region
     # R-Start - VertexGroups Region
     del bpy.types.Scene.show_vertexgroups_region
     del bpy.types.Scene.vertex_groups_include
@@ -1019,11 +988,6 @@ def unregister():
     del bpy.types.Scene.weightpaint_smoothing_amount
     bpy.utils.unregister_class(OBJECT_OT_weightpaint_smoothing)
     # R-End - VertexGroups Region
-    # R-Start - Viewport Display Region 
-    del bpy.types.Scene.show_viewportdisplay_region
-    del bpy.types.Scene.viewportdisplay_settings
-    bpy.utils.unregister_class(OBJECT_OT_FixViewportDisplay)
-    # R-End - Viewport Display Region
     # R-Start - VertexGroupMix
     del bpy.types.Scene.vertex_groups_combined_name
     bpy.utils.unregister_class(OBJECT_OT_combine_vertexgroups)
@@ -1040,6 +1004,26 @@ def unregister():
     del bpy.types.Scene.vertex_groups_mask
     del bpy.types.Scene.vertex_groups_mask_invert
     # R-End - Vertex Group Mask
+    # R-Start - Viewport Display Region 
+    del bpy.types.Scene.show_viewportdisplay_region
+    del bpy.types.Scene.viewportdisplay_settings
+    bpy.utils.unregister_class(OBJECT_OT_FixViewportDisplay)
+    # R-End - Viewport Display Region
+    # R-Start - Save Region
+    del bpy.types.Scene.show_save_region
+    bpy.types.Scene.akoopreset_list = bpy.props.EnumProperty(
+        name="Presets",
+        description="Select preset",
+        items=lambda self, context: [(k, k, "") for k in load_presets().keys()]
+    )
+    bpy.types.Scene.akoopreset_newname = bpy.props.StringProperty(
+        name="Preset Name",
+        description="Name of new preset to save"
+    )
+    bpy.utils.register_class(OBJECT_OT_save_akoopreset)
+    bpy.utils.register_class(OBJECT_OT_load_akoopreset)
+    bpy.utils.register_class(OBJECT_OT_delete_akoopreset)
+    # R-End - Save Region
 #endregion
 
 if __name__ == "__main__": 
