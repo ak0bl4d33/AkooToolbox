@@ -259,11 +259,11 @@ class OBJECT_OT_surface_deform_with_shapes(bpy.types.Operator):
         self.report({'INFO'}, f"{len(source.data.shape_keys.key_blocks)} Transfer ShapeKeys successful.") 
         return {'FINISHED'}     
 #endregion
-#region class Paste Non-Null ShapeKeys
-class OBJECT_OT_shapekeys_paste_non_null(bpy.types.Operator):
-    bl_idname = "object.shapekeys_paste_non_null"
-    bl_label = "Paste Non-Null"
-    bl_description = "Collect all non-zero (value != 0) ShapeKeys on the active object and put them into the Include field (comma-separated)."
+#region class Paste Locked ShapeKeys
+class OBJECT_OT_shapekeys_paste_locked(bpy.types.Operator):
+    bl_idname = "object.shapekeys_paste_locked"
+    bl_label = "Paste Locked"
+    bl_description = "Collect all locked ShapeKeys on the active object and put them into the Include field (comma-separated)."
     bl_options = {'REGISTER', 'UNDO'}
 
     from typing import ClassVar, Any
@@ -278,35 +278,27 @@ class OBJECT_OT_shapekeys_paste_non_null(bpy.types.Operator):
         name="Include 'Basis'",
         description="Also include the Basis key (usually you don't want this).",
         default=False
-    )
+    )    
     def execute(self, context):
         obj = context.active_object
         if not obj or obj.type != 'MESH':
             self.report({'ERROR'}, "Active Object is no Mesh.")
             return {'CANCELLED'}
-        keys = getattr(getattr(obj.data, "shape_keys", None), "key_blocks", None)
-        if not keys:
-            self.report({'WARNING'}, "Object has no ShapeKeys.")
-            return {'CANCELLED'}
-        names = []
-        for kb in keys:
-            if kb.name == "Basis" and not self.include_basis:
-                continue
-            if abs(kb.value) > 1e-8:
-                names.append(kb.name)
-        if not names:
-            self.report({'INFO'}, "No non-zero ShapeKeys found.")
+        locked = [sk.name for sk in obj.data.shape_keys.key_blocks if getattr(sk, "lock_shape", False)]
+        if not locked:
+            self.report({'INFO'}, "No locked ShapeKeys found.")
             return {'CANCELLED'}
         scene = context.scene
         existing = scene.surface_deform_include_exclude_textfield.strip()
         if self.replace or not existing:
-            new_list = names
+            names = locked
         else:
             current = [n.strip() for n in existing.split(",") if n.strip()]
-            new_list = current + [n for n in names if n not in current]
-        scene.surface_deform_include_exclude_textfield = ", ".join(new_list)
-        self.report({'INFO'}, f"Inserted {len(names)} ShapeKeys into Include.")
+            names = current + [n for n in locked if n not in current]
+        scene.surface_deform_include_exclude_textfield = ", ".join(names)
+        self.report({'INFO'}, f"Excluded {len(locked)} locked ShapeKeys.")
         return {'FINISHED'}
+    
 #endregion
 #region class remove empty shapekeys
 class OBJECT_OT_remove_empty_shapekeys(bpy.types.Operator): 
@@ -669,7 +661,7 @@ class OBJECT_PT_surface_deform_panel(bpy.types.Panel):
             col = box.column(align=True)
             col.prop(context.scene, "surface_deform_include_exclude_selector", text="", icon="FORCE_CHARGE")
             col.prop(context.scene, "surface_deform_include_exclude_textfield", text="")
-            col.operator("object.shapekeys_paste_non_null", text="Paste Non-Null", icon="PASTEDOWN")
+            col.operator("object.shapekeys_paste_locked", text="Paste Locked", icon="PASTEDOWN")
             box.separator() 
             Shapekey_Setting = box.row(align=True)
             Shapekey_Setting.prop(context.scene, "surface_deform_falloff", text="Falloff") 
@@ -836,9 +828,9 @@ def register():
         max=1.0
     ) 
     bpy.utils.register_class(OBJECT_OT_reset_deform_settings) 
-    # R-Start - Paste Non-Null Shapekeys
-    bpy.utils.register_class(OBJECT_OT_shapekeys_paste_non_null)
-    # R-End - Paste Non-Null Shapekeys
+    # R-Start - Paste Locked Shapekeys
+    bpy.utils.register_class(OBJECT_OT_shapekeys_paste_locked)
+    # R-End - Paste Locked Shapekeys
     # R-End - Shapekey Region
     # R-Start - VertexGroups Region
     bpy.types.Scene.show_vertexgroups_region = bpy.props.BoolProperty(
@@ -1014,9 +1006,9 @@ def unregister():
     del bpy.types.Scene.surface_deform_falloff
     del bpy.types.Scene.surface_deform_strength
     bpy.utils.unregister_class(OBJECT_OT_reset_deform_settings) 
-    # R-Start - Paste Non-Null Shapekeys
-    bpy.utils.unregister_class(OBJECT_OT_shapekeys_paste_non_null)
-    # R-End - Paste Non-Null Shapekeys
+    # R-Start - Paste locked Shapekeys
+    bpy.utils.unregister_class(OBJECT_OT_shapekeys_paste_locked)
+    # R-End - Paste locked Shapekeys
     # R-End - Shapekey Region
     # R-Start - VertexGroups Region
     del bpy.types.Scene.show_vertexgroups_region
