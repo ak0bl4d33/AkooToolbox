@@ -2,7 +2,7 @@
 
 > **Version:** 1.0  
 > **Author:** ak0bl4d3  
-> **Blender:** 4.2.9+  
+> **Blender:** 4.5.3+  
 > **Category:** Object  
 
 **AkooToolbox** is a Blender addon designed to simplify workflows with **Shape Keys**, **Surface Deform**, **Vertex Groups**, and **Viewport Display settings**.  
@@ -79,9 +79,9 @@ show_in_front, wire, box
 
 ## 📋 Example Workflows
 
-**Transfer Shape Keys (only Body & Face, exclude Cloth):**
-Include: Body, Face
-Exclude: Cloth
+**Transfer Shape Keys (only ButtBig & ButtSmall, exclude ThighBig):**
+Include: ButtBig, ButtSmall
+Exclude: ThighBig
 
 **Smooth Vertex Groups (Spine & Chest only, 5 iterations):**
 Include: Spine, Chest
