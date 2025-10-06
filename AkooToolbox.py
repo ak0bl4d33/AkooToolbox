@@ -2,7 +2,7 @@ bl_info = {
     "name": "AkooToolbox",
     "author": "ak0bl4d3",
     "version": (1, 0),
-    "blender": (4, 3, 0),
+    "blender": (4, 5, 3),
     "location": "View3D > Tool Shelf",
     "description": "Surface Deform and Shape Keys from Source to active Mesh",
     "category": "Object",
