@@ -2,7 +2,7 @@
 
  
 > **Author:** ak0bl4d3  
-> **Blender:** 4.5.3+   
+> **Blender:** 4.2.0+   
 
 **AkooToolbox** is a Blender addon designed to simplify workflows with **Shape Keys/Surface Deform**, **Vertex Groups**, and **Viewport Display settings**.  
 All user settings can be saved and restored when reopening Blender.
