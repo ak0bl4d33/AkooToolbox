@@ -15,7 +15,7 @@ import os
 context = bpy.context
 
 #region def get_mesh_objects
-# This is for the SOURCE MESH DropDown! (Collects all Objects which are a MESH)
+                            # This is for the SOURCE MESH DropDown! (Collects all Objects which are a MESH)
 def get_mesh_objects(self, context):
     return [(obj.name, obj.name, "") for obj in context.scene.objects if obj.type == 'MESH']
 #endregion
@@ -609,6 +609,7 @@ class OBJECT_OT_delete_akoopreset(bpy.types.Operator):
 #endregion
 
 #region class save settings
+                                    # SAVES ALL THOSE VALUES FOR THE NEXT TIME YOU OPEN BLENDER
 class OBJECT_OT_save_settings(bpy.types.Operator):
     bl_idname = "object.save_settings" 
     bl_label = "Save Settings" 
@@ -674,7 +675,8 @@ class OBJECT_PT_surface_deform_panel(bpy.types.Panel):
             Shapekey_Btn = box.row(align=True)
             Shapekey_Btn.operator("object.surface_deform_with_shapes", icon="SHAPEKEY_DATA") 
             Shapekey_Btn.operator("object.remove_empty_shapekeys", icon="BRUSH_DATA")
-            box.separator() 
+            box.separator()
+        # R-End - Show/Hide Shapekey Region
         # R-Start - Show/Hide VertexGroups Region
         layout.prop(scene, "show_vertexgroups_region", icon="TRIA_DOWN" if scene.show_vertexgroups_region else "TRIA_RIGHT", emboss=False)
         if scene.show_vertexgroups_region:
@@ -744,6 +746,9 @@ class OBJECT_PT_surface_deform_panel(bpy.types.Panel):
 
 #region def register
 def register(): 
+                            #LOAD DATA BEFORE EVERYTHING ELSE
+    saved_data = load_user_data()
+
     # R-Start - Source Mesh Region
     bpy.types.Scene.show_source_region = bpy.props.BoolProperty(
         name="Show Source Region",
@@ -758,8 +763,6 @@ def register():
     )
     bpy.utils.register_class(OBJECT_OT_save_settings)
     # R-End - Source Mesh Region
-
-
     # R-Start - Shape Key Region
     bpy.types.Scene.show_shapekey_region = bpy.props.BoolProperty(
         name="Show Shape Key Region",
@@ -769,7 +772,7 @@ def register():
     bpy.utils.register_class(OBJECT_OT_surface_deform_with_shapes) 
     bpy.utils.register_class(OBJECT_OT_remove_empty_shapekeys) 
     bpy.utils.register_class(OBJECT_PT_surface_deform_panel) 
-    saved_include_exclude_textfield_shapekey = saved_data.get("last_include_exclude_textfield_shapekeys_object")
+    saved_include_exclude_textfield_shapekey = saved_data.get("last_include_exclude_shapekeys_object")
     bpy.types.Scene.surface_deform_include_exclude_selector = bpy.props.EnumProperty(
         name="Include/Exclude Mode",
         description="Choose whether to use Include or Exclude list (Include has priority).",
@@ -813,12 +816,12 @@ def register():
     # Load saved include/exclude for VertexGroups from AkooToolbox_config.json
     saved_include_exclude_textfield_vertexgroups = saved_data.get("last_include_vertex_groups_object")
     bpy.types.Scene.vertex_groups_include_exclude_selector = bpy.props.EnumProperty(
-    name="Include/Exclude Mode",
-    description="Choose whether to use Include or Exclude list (Include has priority).",
-    items=[
-        ('INCLUDE', "Include", "Use the Include list (if not empty)"),
-        ('EXCLUDE', "Exclude", "Use the Exclude list (if Include is empty)"),
-    ]
+        name="Include/Exclude Mode",
+        description="Choose whether to use Include or Exclude list (Include has priority).",
+        items=[
+            ('INCLUDE', "Include", "Use the Include list (if not empty)"),
+            ('EXCLUDE', "Exclude", "Use the Exclude list (if Include is empty)"),
+        ]
     )
     bpy.types.Scene.vertex_groups_include_exclude_textfield = bpy.props.StringProperty(
         name="Include/Exclude TextField",
@@ -828,18 +831,18 @@ def register():
     # Load saved mapping for VertexGroups from AkooToolbox_config.json
     saved_mapping_vertex_groups = saved_data.get("last_mapping_vertex_groups_object")
     bpy.types.Scene.vertex_mapping_method = bpy.props.EnumProperty(
-    name="Mapping",
-    description="Choose the mapping method for Data Transfer",
-    items=[
-        ('TOPOLOGY', "Topology", ""),
-        ('NEAREST', "Nearest Vertex", ""),
-        ('EDGE_NEAREST', "Nearest Edge Vertex", ""),
-        ('EDGEINTERP_NEAREST', "Nearest Edge Interpolated", ""),
-        ('POLY_NEAREST', "Nearest Face Vertex", ""),
-        ('POLYINTERP_NEAREST', "Nearest Face Interpolated", ""),
-        ('POLYINTERP_VNORPROJ', "Projected Face Interpolated", ""),
-    ],
-    default=saved_mapping_vertex_groups if saved_mapping_vertex_groups else 'POLYINTERP_NEAREST'
+        name="Mapping",
+        description="Choose the mapping method for Data Transfer",
+        default=saved_mapping_vertex_groups if saved_mapping_vertex_groups else 'POLYINTERP_NEAREST',
+        items=[
+            ('TOPOLOGY', "Topology", ""),
+            ('NEAREST', "Nearest Vertex", ""),
+            ('EDGE_NEAREST', "Nearest Edge Vertex", ""),
+            ('EDGEINTERP_NEAREST', "Nearest Edge Interpolated", ""),
+            ('POLY_NEAREST', "Nearest Face Vertex", ""),
+            ('POLYINTERP_NEAREST', "Nearest Face Interpolated", ""),
+            ('POLYINTERP_VNORPROJ', "Projected Face Interpolated", ""),
+        ]
 )
     bpy.utils.register_class(OBJECT_OT_transfer_vertexgroups)
     saved_weightpaint_smoothing_amount = saved_data.get("last_weightpaint_smoothing_amount_object")
@@ -852,21 +855,6 @@ def register():
     )
     bpy.utils.register_class(OBJECT_OT_weightpaint_smoothing)
     # R-End - VertexGroups Region
-    # R-Start - Viewport Display Region
-    bpy.types.Scene.show_viewportdisplay_region = bpy.props.BoolProperty(
-        name="ViewportDisplay Region",
-        description="Expand to show viewportdisplay options",
-        default=True
-    )
-    # Load saved data for ViewportDisplay from AkooToolbox_config.json
-    saved_viewportdisplay_settings = saved_data.get("last_viewportdisplay_settings_object")
-    bpy.types.Scene.viewportdisplay_settings = bpy.props.StringProperty(
-        name="ViewportDisplay Settings",
-        description="ALL OPTIONS: show_name, show_axis, show_in_front, bounds or wire or solid or textured, box or sphere or cylinder or cone or capsule",
-        default=saved_viewportdisplay_settings if saved_viewportdisplay_settings else ""
-    ) 
-    bpy.utils.register_class(OBJECT_OT_FixViewportDisplay)
-    # R-End - Viewport Display Region
     # R-Start - VertexGroupMix
     bpy.types.Scene.vertex_groups_combined_name = bpy.props.StringProperty(
         name="Target Group",
@@ -877,6 +865,7 @@ def register():
     bpy.types.Scene.vertex_mix_mode = bpy.props.EnumProperty(
         name="Mode",
         description="VertexWeightMix mode (how A and B are combined)",
+        default='ADD',
         items=[
             ('ADD', 'Add', 'A + B'),
             ('SUB', 'Subtract', 'A - B'),
@@ -887,20 +876,19 @@ def register():
             ('MIN', 'Minimum', 'min(A, B)'),
             ('MAX', 'Maximum', 'max(A, B)'),
             ('SET', 'Replace', 'Set A to B'),
-        ],
-        default='ADD'
+        ]        
     )
     bpy.types.Scene.vertex_mix_set = bpy.props.EnumProperty(
         name="Affect",
         description="Which vertices to affect when mixing",
+        default='ALL',
         items=[
             ('A',   'Only A',    'Only vertices existing in group A'),
             ('B',   'Only B',    'Only vertices existing in group B'),
             ('OR',  'A or B',    'Vertices in A or B'),
             ('AND', 'A and B',   'Vertices in both A and B'),
             ('ALL', 'All',       'All vertices'),
-        ],
-        default='ALL'
+        ]        
     )
     bpy.types.Scene.vertex_mix_normalize = bpy.props.BoolProperty(
         name="Normalize",
@@ -921,11 +909,11 @@ def register():
     # R-Start - Vertex Groups Paste Locked
     bpy.utils.register_class(OBJECT_OT_vertexgroups_paste_locked)
     # R-End - Vertex Groups Paste Locked
-    bpy.types.Scene.vertex_groups_mask = bpy.props.StringProperty(
     # R-Start - Vertex Group Mask
-    name="Vertex Group Mask",
-    description="Optional vertex group name to limit affected areas during Vertex Group transfer.",
-    default=""
+    bpy.types.Scene.vertex_groups_mask = bpy.props.StringProperty(
+        name="Vertex Group Mask",
+        description="Optional vertex group name to limit affected areas during Vertex Group transfer.",
+        default=""
     )
     bpy.types.Scene.vertex_groups_mask_invert = bpy.props.BoolProperty(
         name="Invert",
@@ -933,15 +921,27 @@ def register():
         default=True
     )
     # R-End - Vertex Group Mask
-
-
+    # R-Start - Viewport Display Region
+    bpy.types.Scene.show_viewportdisplay_region = bpy.props.BoolProperty(
+        name="ViewportDisplay Region",
+        description="Expand to show viewportdisplay options",
+        default=True
+    )
+    # Load saved data for ViewportDisplay from AkooToolbox_config.json
+    saved_viewportdisplay_settings = saved_data.get("last_viewportdisplay_settings_object")
+    bpy.types.Scene.viewportdisplay_settings = bpy.props.StringProperty(
+        name="ViewportDisplay Settings",
+        description="ALL OPTIONS: show_name, show_axis, show_in_front, bounds or wire or solid or textured, box or sphere or cylinder or cone or capsule",
+        default=saved_viewportdisplay_settings if saved_viewportdisplay_settings else ""
+    ) 
+    bpy.utils.register_class(OBJECT_OT_FixViewportDisplay)
+    # R-End - Viewport Display Region
     # R-Start - Save Region
     bpy.types.Scene.show_save_region = bpy.props.BoolProperty(
         name="Show Save Region",
         description="Expand to show save options",
         default=True
     )
-    saved_data = load_user_data()
     bpy.types.Scene.akoopreset_list = bpy.props.EnumProperty(
         name="Presets",
         description="Select preset",
@@ -981,8 +981,8 @@ def unregister():
     # R-End - Shape Keys Region
     # R-Start - VertexGroups Region
     del bpy.types.Scene.show_vertexgroups_region
-    del bpy.types.Scene.vertex_groups_include
-    del bpy.types.Scene.vertex_groups_exclude
+    del bpy.types.Scene.vertex_groups_include_exclude_selector
+    del bpy.types.Scene.vertex_groups_include_exclude_textfield
     del bpy.types.Scene.vertex_mapping_method
     bpy.utils.unregister_class(OBJECT_OT_transfer_vertexgroups)
     del bpy.types.Scene.weightpaint_smoothing_amount
